@@ -26,7 +26,10 @@ header {
   z-index: 100;
 }
 
-.logo-area img { height: 50px; }
+.logo-area img {
+    height: 80px;   /* aumente aqui */
+    width: auto;
+}
 
 .search-bar {
   flex: 1;
