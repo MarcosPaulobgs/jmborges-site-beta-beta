@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>JM Borges Presentes</title>
+
+  <!-- Fontes Google -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&family=Poppins:wght@300;400;600&display=swap" rel="stylesheet" />
+
+  <!-- CSS externo -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <header>
+    <div class="logo-area">
+      <img src="img/logo.png" alt="JM Borges Presentes" />
+    </div>
+
+    <div class="search-bar">
+      <input type="text" placeholder="Buscar presentes, kits, pelúcias..." />
+      <button type="button">🔍</button>
+    </div>
+
+    <div class="header-icons">
+      <a href="#" aria-label="Carrinho">🛒</a>
+      <a href="#" aria-label="Perfil">👤</a>
+    </div>
+
+    <div class="menu-toggle" id="menu-toggle" aria-label="Abrir menu">
+      <span></span><span></span><span></span>
+    </div>
+
+    <nav id="nav-menu">
+      <a href="#inicio">Início</a>
+      <a href="#produtos">Produtos</a>
+      <a href="#sobre">Sobre</a>
+      <a href="#contato">Contato</a>
+    </nav>
+  </header>
+
+  <main>
+    <section id="inicio" class="hero">
+      <h2>O presente perfeito para cada momento 🎁</h2>
+      <p>Surpreenda quem você ama com algo especial.</p>
+      <a href="#produtos" class="btn">Ver Produtos</a>
+    </section>
+
+    <section id="produtos" class="produtos">
+      <h2>Produtos em Destaque</h2>
+
+      <div class="grid" id="grid-produtos">
+        <div class="card">
+          <img src="https://via.placeholder.com/300" alt="Cesta Personalizada" />
+          <div class="card-content">
+            <h3>Cesta Personalizada</h3>
+            <p>Ideal para aniversários e datas especiais.</p>
+            <span class="preco">R$ 120,00</span>
+            <button type="button" class="btn-comprar" data-produto="Cesta Personalizada">Comprar</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <img src="https://via.placeholder.com/300" alt="Kit Romântico" />
+          <div class="card-content">
+            <h3>Kit Romântico</h3>
+            <p>Surpreenda com amor e carinho.</p>
+            <span class="preco">R$ 85,00</span>
+            <button type="button" class="btn-comprar" data-produto="Kit Romântico">Comprar</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <img src="https://via.placeholder.com/300" alt="Pelúcias" />
+          <div class="card-content">
+            <h3>Pelúcias</h3>
+            <p>Fofura que encanta qualquer idade.</p>
+            <span class="preco">R$ 45,00</span>
+            <button type="button" class="btn-comprar" data-produto="Pelúcias">Comprar</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="ver-mais-container">
+        <button type="button" class="btn ver-mais" id="btn-ver-mais">Ver Mais Produtos</button>
+      </div>
+    </section>
+
+    <section id="sobre" class="sobre">
+      <h2>Sobre Nós</h2>
+      <p>Somos apaixonados por transformar momentos em lembranças inesquecíveis.</p>
+    </section>
+
+    <section id="contato" class="contato">
+      <h2>Fale Conosco</h2>
+      <a href="https://wa.me/message/VEMCH7P23ZUGE1" class="whatsapp" target="_blank" rel="noreferrer">WhatsApp</a>
+      <a href="https://www.instagram.com/jmborgespresentes/" class="instagram" target="_blank" rel="noreferrer">Instagram</a>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 JM Borges Presentes - Todos os direitos reservados</p>
+  </footer>
+
+  <!-- JS externo -->
+  <script src="script.js"></script>
+</body>
+</html>
