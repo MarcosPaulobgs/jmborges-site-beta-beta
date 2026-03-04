@@ -1,169 +1,252 @@
-// ================== MENU MOBILE ==================
+// ========================= FIREBASE (CDN) ========================= // Comentário do bloco
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js"; // Importa init do Firebase
+import { getFirestore, collection, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js"; // Importa Firestore e helpers
 
-// Captura o botão hamburguer (ícone de 3 linhas)
-const menuToggle = document.getElementById('menu-toggle');
+// ========================= CONFIG FIREBASE ========================= // Comentário do bloco
+const firebaseConfig = { // Objeto de configuração do Firebase
+  apiKey: "COLE_AQUI", // Cole seu apiKey
+  authDomain: "COLE_AQUI", // Cole seu authDomain
+  projectId: "COLE_AQUI", // Cole seu projectId
+  storageBucket: "COLE_AQUI", // Cole seu storageBucket
+  messagingSenderId: "COLE_AQUI", // Cole seu senderId
+  appId: "COLE_AQUI" // Cole seu appId
+}; // Fim config
 
-// Captura o menu de navegação
-const navMenu = document.getElementById('nav-menu');
+const app = initializeApp(firebaseConfig); // Inicializa o Firebase App
+const db = getFirestore(app); // Inicializa o Firestore
 
-// Verifica se os dois elementos existem antes de aplicar eventos (evita erro no console)
-if (menuToggle && navMenu) {
+// ========================= DOM (ELEMENTOS) ========================= // Comentário do bloco
+const grid = document.getElementById("grid-produtos"); // Pega o grid de produtos
+const btnVerMais = document.getElementById("btn-ver-mais"); // Pega o botão ver mais
+const searchInput = document.getElementById("searchInput"); // Pega o input de busca
+const searchBtn = document.getElementById("searchBtn"); // Pega o botão da lupa
+const cartBtn = document.getElementById("cartBtn"); // Botão do carrinho
+const cartBadge = document.getElementById("cartBadge"); // Badge do carrinho
+const cartModal = document.getElementById("cartModal"); // Modal carrinho
+const cartClose = document.getElementById("cartClose"); // Botão fechar modal
+const cartItems = document.getElementById("cartItems"); // Lista de itens no modal
+const cartTotal = document.getElementById("cartTotal"); // Total do carrinho
+const checkoutBtn = document.getElementById("checkoutBtn"); // Botão finalizar
 
-  // Adiciona evento de clique no botão hamburguer
-  menuToggle.addEventListener('click', () => {
+// ========================= MENU MOBILE + SCROLL ========================= // Comentário do bloco
+const menuToggle = document.getElementById("menu-toggle"); // Botão hamburger
+const navMenu = document.getElementById("nav-menu"); // Menu nav
 
-    // Alterna a classe 'active' (abre/fecha menu)
-    navMenu.classList.toggle('active');
+if (menuToggle && navMenu) { // Confere se existem
+  menuToggle.addEventListener("click", () => { // Ao clicar no hamburger
+    navMenu.classList.toggle("active"); // Abre/fecha menu no mobile
+  }); // Fim listener
+} // Fim if
 
-    // Verifica se o menu está aberto
-    const isOpen = navMenu.classList.contains('active');
+document.querySelectorAll("nav a, .hero .btn").forEach((a) => { // Pega links âncora
+  a.addEventListener("click", (e) => { // Ao clicar num link
+    const href = a.getAttribute("href"); // Lê o href
+    if (!href || !href.startsWith("#")) return; // Se não for âncora, sai
+    e.preventDefault(); // Evita pulo seco
+    document.querySelector(href)?.scrollIntoView({ behavior: "smooth" }); // Scroll suave
+    navMenu?.classList.remove("active"); // Fecha menu mobile
+  }); // Fim listener
+}); // Fim forEach
 
-    // Atualiza atributo aria-expanded (acessibilidade)
-    menuToggle.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
-  });
+// ========================= DADOS DO SITE ========================= // Comentário do bloco
+let allProducts = []; // Lista completa vinda do Firestore
+let visibleCount = 6; // Quantos aparecem inicialmente
+let currentSearch = ""; // Texto da busca atual
 
-  // Fecha o menu ao clicar fora dele
-  document.addEventListener('click', (e) => {
+// ========================= CARRINHO (LOCALSTORAGE) ========================= // Comentário do bloco
+const CART_KEY = "jmb_cart_v1"; // Chave do carrinho no storage
+const WHATSAPP_NUMBER = "5573988574884"; // Seu WhatsApp para checkout
 
-    // Verifica se o clique foi dentro do menu
-    const clickedInsideMenu = navMenu.contains(e.target);
+function loadCart() { // Função para carregar carrinho
+  const raw = localStorage.getItem(CART_KEY); // Lê o JSON
+  return raw ? JSON.parse(raw) : []; // Se existir, parseia; senão, array vazio
+} // Fim loadCart
 
-    // Verifica se o clique foi no botão hamburguer
-    const clickedToggle = menuToggle.contains(e.target);
+function saveCart(cart) { // Função para salvar carrinho
+  localStorage.setItem(CART_KEY, JSON.stringify(cart)); // Salva array como JSON
+} // Fim saveCart
 
-    // Se não clicou nem no menu nem no botão → fecha o menu
-    if (!clickedInsideMenu && !clickedToggle) {
-      navMenu.classList.remove('active');
-      menuToggle.setAttribute('aria-expanded', 'false');
-    }
-  });
-}
-// ================== SCROLL SUAVE ==================
+function formatBRL(value) { // Formata número para R$ (simples)
+  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" }); // Retorna formatado
+} // Fim formatBRL
 
-// Seleciona todos os links do menu + botão da hero
-document.querySelectorAll('nav a, .hero .btn').forEach(anchor => {
+function parsePriceBRL(text) { // Converte "R$ 120,00" em número 120.00
+  const cleaned = String(text).replace(/[^\d,]/g, "").replace(",", "."); // Remove símbolos e ajusta vírgula
+  return Number(cleaned) || 0; // Retorna número
+} // Fim parsePriceBRL
 
-  // Adiciona evento de clique em cada link
-  anchor.addEventListener('click', function (e) {
+function updateBadge() { // Atualiza badge do carrinho
+  const cart = loadCart(); // Lê carrinho
+  const qty = cart.reduce((sum, it) => sum + it.qty, 0); // Soma quantidades
+  cartBadge.textContent = String(qty); // Atualiza texto do badge
+} // Fim updateBadge
 
-    // Pega o valor do href
-    const href = this.getAttribute('href');
+function addToCart(productId) { // Adiciona produto ao carrinho
+  const cart = loadCart(); // Carrega carrinho
+  const product = allProducts.find((p) => p.id === productId); // Encontra produto
+  if (!product) return; // Se não achar, sai
+  const found = cart.find((it) => it.id === productId); // Procura se já existe
+  if (found) found.qty += 1; // Se existe, soma 1
+  else cart.push({ id: product.id, name: product.name, price: product.price, qty: 1 }); // Se não, cria item
+  saveCart(cart); // Salva carrinho
+  updateBadge(); // Atualiza badge
+} // Fim addToCart
 
-    // Se não existir ou não for âncora (#), interrompe
-    if (!href || !href.startsWith('#')) return;
+function openCart() { // Abre modal carrinho
+  cartModal.classList.add("open"); // Adiciona classe open
+  renderCart(); // Renderiza itens
+} // Fim openCart
 
-    // Impede comportamento padrão (pular seco para seção)
-    e.preventDefault();
+function closeCart() { // Fecha modal carrinho
+  cartModal.classList.remove("open"); // Remove classe open
+} // Fim closeCart
 
-    // Busca o elemento destino
-    const target = document.querySelector(href);
+function changeQty(id, delta) { // Altera quantidade
+  const cart = loadCart(); // Carrega carrinho
+  const item = cart.find((it) => it.id === id); // Encontra item
+  if (!item) return; // Se não achar, sai
+  item.qty += delta; // Aplica delta
+  if (item.qty <= 0) { // Se zerar
+    const idx = cart.findIndex((it) => it.id === id); // Pega índice
+    cart.splice(idx, 1); // Remove item
+  } // Fim if
+  saveCart(cart); // Salva carrinho
+  updateBadge(); // Atualiza badge
+  renderCart(); // Atualiza modal
+} // Fim changeQty
 
-    // Se existir, faz scroll suave até ele
-    if (target) target.scrollIntoView({ behavior: 'smooth' });
+function renderCart() { // Renderiza carrinho no modal
+  const cart = loadCart(); // Carrega carrinho
+  cartItems.innerHTML = ""; // Limpa lista
+  let total = 0; // Totalizador
 
-    // Fecha menu no mobile após clicar
-    navMenu?.classList.remove('active');
+  if (cart.length === 0) { // Se carrinho vazio
+    cartItems.innerHTML = `<p style="opacity:.7">Seu carrinho está vazio.</p>`; // Mensagem
+    cartTotal.textContent = `Total: ${formatBRL(0)}`; // Total zero
+    return; // Sai
+  } // Fim if
 
-    // Atualiza aria-expanded para acessibilidade
-    menuToggle?.setAttribute('aria-expanded', 'false');
-  });
-});
-// ================== FUNÇÃO COMPRAR (WHATSAPP) ==================
+  cart.forEach((it) => { // Para cada item
+    total += it.price * it.qty; // Soma total
+    const row = document.createElement("div"); // Cria linha
+    row.className = "cart-row"; // Classe CSS
+    row.innerHTML = ` 
+      <div class="cart-name">${it.name}</div>
+      <div class="cart-controls">
+        <button type="button" class="ghost" data-dec="${it.id}">-</button>
+        <span>${it.qty}</span>
+        <button type="button" class="ghost" data-inc="${it.id}">+</button>
+      </div>
+      <div class="cart-price">${formatBRL(it.price * it.qty)}</div>
+    `; // HTML da linha
+    cartItems.appendChild(row); // Adiciona na lista
+  }); // Fim forEach
 
-// Função chamada ao clicar no botão Comprar
-function comprar(produto) {
+  cartTotal.textContent = `Total: ${formatBRL(total)}`; // Atualiza total
 
-  // Número da loja (com código do país)
-  const numeroWhatsApp = "5573988574884";
+  cartItems.querySelectorAll("[data-inc]").forEach((b) => { // Botões +
+    b.addEventListener("click", () => changeQty(b.dataset.inc, +1)); // Incrementa
+  }); // Fim forEach +
 
-  // Mensagem personalizada com o nome do produto
-  const mensagem = `Olá! Gostaria de comprar o ${produto}.`;
+  cartItems.querySelectorAll("[data-dec]").forEach((b) => { // Botões -
+    b.addEventListener("click", () => changeQty(b.dataset.dec, -1)); // Decrementa
+  }); // Fim forEach -
+} // Fim renderCart
 
-  // Monta URL oficial da API do WhatsApp
-  const url = `https://api.whatsapp.com/send?phone=${numeroWhatsApp}&text=${encodeURIComponent(mensagem)}`;
+function checkoutWhatsApp() { // Finaliza no WhatsApp
+  const cart = loadCart(); // Carrega carrinho
+  if (cart.length === 0) return; // Se vazio, sai
 
-  // Abre o WhatsApp em nova aba
-  window.open(url, "_blank");
-}
+  const lines = cart.map((it) => `• ${it.qty}x ${it.name} (${formatBRL(it.price)})`); // Linhas da mensagem
+  const total = cart.reduce((s, it) => s + it.price * it.qty, 0); // Total
+  const message = `Olá! Quero finalizar este pedido:\n\n${lines.join("\n")}\n\nTotal: ${formatBRL(total)}`; // Mensagem final
+  const url = `https://api.whatsapp.com/send?phone=${WHATSAPP_NUMBER}&text=${encodeURIComponent(message)}`; // URL WhatsApp
+  window.open(url, "_blank"); // Abre WhatsApp
+} // Fim checkoutWhatsApp
 
-// ================== FAVORITAR + COMPRAR (EVENT DELEGATION) ==================
+cartBtn.addEventListener("click", openCart); // Abre carrinho ao clicar
+cartClose.addEventListener("click", closeCart); // Fecha carrinho
+cartModal.addEventListener("click", (e) => { if (e.target === cartModal) closeCart(); }); // Fecha clicando fora
+checkoutBtn.addEventListener("click", checkoutWhatsApp); // Finaliza pedido
 
-// Seleciona o container que possui os cards
-const grid = document.getElementById('grid-produtos');
+// ========================= BUSCA (FUNCIONANDO) ========================= // Comentário do bloco
+function applySearch() { // Aplica filtro por busca
+  currentSearch = searchInput.value.trim().toLowerCase(); // Atualiza termo
+  visibleCount = 6; // Reseta paginação
+  renderProducts(); // Re-renderiza
+} // Fim applySearch
 
-// Verifica se o grid existe
-if (grid) {
+searchBtn.addEventListener("click", applySearch); // Clique na lupa aplica busca
+searchInput.addEventListener("input", applySearch); // Digitar já filtra
 
-  // Adiciona evento de clique no container (delegação de evento)
-  grid.addEventListener('click', (e) => {
+// ========================= PRODUTOS (FIRESTORE) ========================= // Comentário do bloco
+async function fetchProducts() { // Busca produtos do Firestore
+  const ref = collection(db, "products"); // Referência da coleção
+  const q = query(ref, orderBy("highlightOrder", "asc")); // Ordena destaques (menor primeiro)
+  const snap = await getDocs(q); // Faz a leitura
+  const docs = snap.docs.map((d) => ({ id: d.id, ...d.data() })); // Converte docs para objetos
+  allProducts = docs.map((p) => ({ // Normaliza campos
+    id: p.id, // ID
+    name: p.name || "", // Nome
+    desc: p.desc || "", // Descrição
+    priceText: p.priceText || "R$ 0,00", // Texto do preço
+    price: Number(p.price ?? parsePriceBRL(p.priceText)), // Preço numérico
+    imageUrl: p.imageUrl || "https://via.placeholder.com/300", // URL imagem
+    highlighted: Boolean(p.highlighted), // Destaque
+    highlightOrder: Number(p.highlightOrder ?? 999999), // Ordem
+    createdAt: p.createdAt || 0 // Data
+  })); // Fim normalização
+} // Fim fetchProducts
 
-    // Verifica se o clique foi em um botão "Comprar"
-    const btnComprar = e.target.closest('.btn-comprar');
+function createCard(p) { // Cria card
+  const card = document.createElement("div"); // Cria div
+  card.className = "card"; // Classe card
+  card.innerHTML = `
+    <img src="${p.imageUrl}" alt="${p.name}">
+    <div class="card-content">
+      <h3>${p.name}</h3>
+      <p>${p.desc}</p>
+      <span class="preco">${p.priceText}</span>
+      <button type="button" class="btn-comprar" data-buy="${p.id}">Adicionar ao carrinho</button>
+    </div>
+  `; // HTML do card
+  return card; // Retorna card
+} // Fim createCard
 
-    if (btnComprar) {
+function renderProducts() { // Renderiza produtos na tela
+  if (!grid) return; // Se grid não existe, sai
 
-      // Pega o nome do produto armazenado no data-produto
-      const produto = btnComprar.dataset.produto || 'Produto';
+  const filtered = allProducts.filter((p) => { // Aplica filtro por busca
+    if (!currentSearch) return true; // Se não tem busca, mostra tudo
+    return (p.name + " " + p.desc).toLowerCase().includes(currentSearch); // Busca em nome+desc
+  }); // Fim filtro
 
-      // Chama função comprar
-      comprar(produto);
+  const ordered = filtered.sort((a, b) => { // Ordena: destaques primeiro pela ordem
+    const ad = a.highlighted ? a.highlightOrder : 999999; // Destaques ficam antes
+    const bd = b.highlighted ? b.highlightOrder : 999999; // Destaques ficam antes
+    if (ad !== bd) return ad - bd; // Ordena por ordem
+    return (b.createdAt || 0) - (a.createdAt || 0); // Depois por data
+  }); // Fim sort
 
-      return; // Interrompe para não executar o favoritar
-    }
+  const visible = ordered.slice(0, visibleCount); // Pega só os visíveis
 
-    // Se clicou no card (mas não no botão)
-    const card = e.target.closest('.card');
+  grid.innerHTML = ""; // Limpa grid
+  visible.forEach((p) => grid.appendChild(createCard(p))); // Insere cards
 
-    // Alterna classe favorito (efeito visual)
-    if (card) card.classList.toggle('favorito');
-  });
-}
+  const hasMore = visibleCount < ordered.length; // Verifica se tem mais
+  btnVerMais.parentElement.style.display = hasMore ? "block" : "none"; // Mostra/esconde
 
-// ================== VER MAIS PRODUTOS ==================
+  grid.querySelectorAll("[data-buy]").forEach((btn) => { // Para cada botão comprar
+    btn.addEventListener("click", () => addToCart(btn.dataset.buy)); // Adiciona ao carrinho
+  }); // Fim forEach
+} // Fim renderProducts
 
-// Seleciona botão "Ver Mais"
-const btnVerMais = document.getElementById('btn-ver-mais');
+btnVerMais.addEventListener("click", () => { // Clique em ver mais
+  visibleCount += 6; // Aumenta 6
+  renderProducts(); // Re-renderiza
+}); // Fim listener
 
-// Executa apenas se botão e grid existirem
-if (btnVerMais && grid) {
-
-  // Evento de clique no botão
-  btnVerMais.addEventListener('click', () => {
-
-    // Lista de novos produtos que serão adicionados dinamicamente
-    const novosProdutos = [
-      { nome: "Porta-retratos", desc: "Lembrança inesquecível", preco: "R$ 60,00", img: "https://via.placeholder.com/300" },
-      { nome: "Caneca Personalizada", desc: "Mensagem especial", preco: "R$ 35,00", img: "https://via.placeholder.com/300" },
-      { nome: "Vela Aromática", desc: "Ambiente acolhedor", preco: "R$ 40,00", img: "https://via.placeholder.com/300" },
-      { nome: "Agenda 2026", desc: "Organize seu ano com estilo", preco: "R$ 50,00", img: "https://via.placeholder.com/300" },
-      { nome: "Kit Spa", desc: "Relaxe e se presenteie", preco: "R$ 110,00", img: "https://via.placeholder.com/300" }
-    ];
-
-    // Percorre cada produto da lista
-    novosProdutos.forEach((prod) => {
-
-      // Cria uma nova div para o card
-      const card = document.createElement('div');
-
-      // Adiciona classe card
-      card.classList.add('card');
-
-      // Insere estrutura interna do card
-      card.innerHTML = `
-        <img src="${prod.img}" alt="${prod.nome}">
-        <div class="card-content">
-          <h3>${prod.nome}</h3>
-          <p>${prod.desc}</p>
-          <span class="preco">${prod.preco}</span>
-          <button type="button" class="btn-comprar" data-produto="${prod.nome}">Comprar</button>
-        </div>
-      `;
-
-      // Adiciona card ao grid
-      grid.appendChild(card);
-    });
-
-    // Esconde o botão após carregar novos produtos
-    btnVerMais.parentElement.style.display = 'none';
-  });
-}
+// ========================= INIT ========================= // Comentário do bloco
+updateBadge(); // Atualiza badge ao carregar
+await fetchProducts(); // Busca produtos no Firestore
+renderProducts(); // Renderiza produtos

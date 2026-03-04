@@ -1,0 +1,70 @@
+<!DOCTYPE html> <!-- HTML5 -->
+<html lang="pt-br"> <!-- Idioma -->
+
+<head> <!-- Head -->
+  <meta charset="UTF-8" /> <!-- Charset -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" /> <!-- Responsivo -->
+  <title>Admin - JM Borges</title> <!-- Título -->
+  <link rel="stylesheet" href="admin.css" /> <!-- CSS admin -->
+</head> <!-- Fim head -->
+
+<body> <!-- Corpo -->
+
+  <header class="topbar"> <!-- Topo -->
+    <h1>Admin - JM Borges Presentes</h1> <!-- Título -->
+    <button id="logoutBtn" type="button" class="ghost">Sair</button> <!-- Logout -->
+  </header> <!-- Fim header -->
+
+  <main class="wrap"> <!-- Conteúdo -->
+
+    <!-- BLOCO LOGIN -->
+    <section id="loginBox" class="card"> <!-- Caixa login -->
+      <h2>Login do Admin</h2> <!-- Título -->
+      <label>Email <input id="email" type="email" placeholder="seuemail@..." /></label> <!-- Email -->
+      <label>Senha <input id="password" type="password" placeholder="sua senha" /></label> <!-- Senha -->
+      <button id="loginBtn" type="button">Entrar</button> <!-- Botão entrar -->
+      <p id="loginMsg" class="muted"></p> <!-- Mensagem -->
+    </section> <!-- Fim login -->
+
+    <!-- BLOCO PAINEL -->
+    <section id="panelBox" class="card" hidden> <!-- Painel (inicia oculto) -->
+      <h2>Produtos</h2> <!-- Título -->
+
+      <div class="grid2"> <!-- Grid 2 colunas -->
+        <div> <!-- Coluna formulário -->
+
+          <h3 id="formTitle">Novo produto</h3> <!-- Título do formulário -->
+
+          <label>Nome <input id="pName" type="text" /></label> <!-- Nome -->
+          <label>Descrição <input id="pDesc" type="text" /></label> <!-- Desc -->
+          <label>Preço (texto) <input id="pPriceText" type="text" placeholder="R$ 120,00" /></label> <!-- Texto preço -->
+
+          <label>Imagem (upload) <input id="pImage" type="file" accept="image/*" /></label> <!-- Upload -->
+          <div id="preview" class="preview"></div> <!-- Prévia -->
+
+          <label class="check"><input id="pHighlighted" type="checkbox" /> Produto em destaque</label> <!-- Destaque -->
+          <label>Ordem do destaque (1,2,3...) <input id="pHighlightOrder" type="number" min="1" value="1" /></label> <!-- Ordem -->
+
+          <div class="actions"> <!-- Botões -->
+            <button id="saveBtn" type="button">Salvar</button> <!-- Salvar -->
+            <button id="cancelBtn" type="button" class="ghost" hidden>Cancelar edição</button> <!-- Cancelar -->
+          </div> <!-- Fim actions -->
+
+          <input id="editingId" type="hidden" value="" /> <!-- Guarda ID do item editando -->
+
+        </div> <!-- Fim coluna -->
+
+        <div> <!-- Coluna lista -->
+          <h3>Lista</h3> <!-- Título -->
+          <input id="filterInput" type="text" placeholder="Buscar produto..." /> <!-- Busca no admin -->
+          <div id="list" class="list"></div> <!-- Lista renderizada -->
+        </div> <!-- Fim coluna -->
+      </div> <!-- Fim grid2 -->
+    </section> <!-- Fim painel -->
+
+  </main> <!-- Fim main -->
+
+  <script type="module" src="admin.js"></script> <!-- JS admin (module) -->
+</body> <!-- Fim body -->
+
+</html> <!-- Fim html -->
